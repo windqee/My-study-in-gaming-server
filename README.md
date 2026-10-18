@@ -51,7 +51,7 @@ export PATH="$PWD/.venv/bin:$PATH"
 
 DTO 在内存中可以尚未通过验证。现有校验只覆盖有限向量、矩形边界、基础端点和输入方向；WP-02 负责完整协议编码、长度上限、消息方向及阶段相关字段校验。Error 消息由边界调用者脱敏并限制长度。凭证包装不提供加密或内存安全擦除保证。
 
-尚未实现 ENet、Godot、实际网络、JSON 编解码、游戏逻辑或密码学。GameEvent、TraceRecord、ITraceSink 的详细契约留给 WP-09；ITokenProvider 留给 WP-07。完成 WP-01 不代表 W01、G0 或 WP-02 完成。
+尚未实现 ENet、Godot、实际网络、JSON 编解码、游戏逻辑或密码学。GameEvent、TraceRecord、ITraceSink 的详细契约留给 WP-09；ITokenProvider 在 WP-04 初始会话接入时定义和实现，WP-07 再完善恢复能力。完成 WP-01 不代表 W01、G0 或 WP-02 完成。
 
 - [WP-01 实施与验证记录](docs/wp01-implementation.md)
 - [WP-01 细化计划](docs/superpowers/plans/2026-10-18-wp01-foundation.md)

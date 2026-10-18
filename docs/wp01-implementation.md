@@ -51,6 +51,6 @@ CMake 临时安装于 `/private/tmp/netarena-wp01-tools/runtime`，没有全局�
 
 ## 有意延后
 
-WP-02 接手 ProtocolCodec、真实传输实现、ENet/Godot 最小互通及完整协议校验。WP-07 再定义 ITokenProvider 的完整契约及受信任密码学适配器。WP-09 再定义 GameEvent、TraceRecord、ITraceSink 及证据格式，本次不放空壳占位。Python 包、场景执行器、游戏模拟、恢复逻辑与安全认证均未实现。
+WP-02 接手 ProtocolCodec、真实传输实现、ENet/Godot 最小互通及完整协议校验。WP-04 初始会话接入需要发放凭证，因此在该工作包定义 ITokenProvider 的完整契约并实现受信任密码学适配器；WP-07 再完善会话恢复。WP-09 再定义 GameEvent、TraceRecord、ITraceSink 及证据格式，本次不放空壳占位。Python 包、场景执行器、游戏模拟、恢复逻辑与安全认证均未实现。
 
 路线图只标记 WP-01；W01、G0、WP-02 继续未完成。
