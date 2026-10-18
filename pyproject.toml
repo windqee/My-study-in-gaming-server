@@ -1,0 +1,7 @@
+# Reserved configuration for future Python evidence/scenario tooling.
+# WP-01 has no Python runtime, package, build backend or dependencies.
+[tool.ruff]
+line-length = 100
+
+[tool.pytest.ini_options]
+testpaths = ["tests/python"]
