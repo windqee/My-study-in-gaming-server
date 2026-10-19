@@ -1,0 +1,8 @@
+[configuration]
+entry_symbol = "netarena_library_init"
+compatibility_minimum = "4.5"
+reloadable = false
+
+[libraries]
+macos.debug = "res://bin/libnetarena_godot.dylib"
+macos.release = "res://bin/libnetarena_godot.dylib"

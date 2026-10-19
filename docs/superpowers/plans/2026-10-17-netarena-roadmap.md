@@ -1,12 +1,12 @@
 # NetArena 实现排期与开发路线图（Implementation Plan）
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use subagent-driven-development or executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. 本文件是交付排期；进入某一工作包的编码前，再依据接口文档细化其代码修改与验证步骤。2026-10-17 初稿仅建立排期；截至 2026-10-18 已完成 WP-01，实现进度见第 11 节。
+> **For agentic workers:** REQUIRED SUB-SKILL: Use subagent-driven-development or executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. 本文件是交付排期；进入某一工作包的编码前，再依据接口文档细化其代码修改与验证步骤。2026-10-17 初稿仅建立排期；截至 2026-10-19 已完成 WP-01、WP-02，实现进度见第 11 节。
 
 **Goal:** 在 2026-12-27 前形成可玩的 C++ 联机游戏实验场 v0.1，具备客户端、自动测试、状态回放和 AI 场景生成能力。
 
 **Architecture:** 以 C++ 权威房间服为主，Godot 原生桥接共享客户端通信与移动逻辑。Python 负责编排测试、故障实验和 AI；游戏规则与网络适配、文件记录、表现层和模型服务保持独立。
 
-**Tech Stack:** C++20、Godot 4.x、Python 3、拟选 ENet、CMake、JSON/NDJSON。具体依赖小版本在第一周验证并锁定。
+**Tech Stack:** C++20、Godot 4.5.1、Python 3.12+、ENet 1.3.18、CMake、nlohmann/json 3.12.0；后续记录使用 NDJSON。已验证依赖见 deps.lock.json。
 
 ---
 
@@ -21,8 +21,8 @@
 | 总周期 | 10 周，70 个自然日 |
 | 投入假设 | 单人，每周约 20–25 小时；计划容量按 22 小时/周计算 |
 | 工时分配 | 每周约 18 小时安排开发与验证，4 小时用于复盘、修复与风险缓冲；合计 180＋40＝220 小时 |
-| 已完成（截至 2026-10-18） | 项目需求、功能需求、模块解耦、主要接口设计文档，以及 WP-01 工程基础与共享契约 |
-| 尚未开始（截至 2026-10-18） | WP-02～WP-20，包括协议/网络互通、游戏功能、性能测量及发布 |
+| 已完成（截至 2026-10-19） | 项目需求、功能需求、模块解耦、主要接口设计文档，以及 WP-01 工程基础、WP-02 协议与真实 Godot 互通 |
+| 尚未开始（截至 2026-10-19） | WP-03～WP-20，包括游戏功能、性能测量及发布 |
 | 日期性质 | 计划目标，不是完成承诺；按实际可投入时间和关卡结果调整 |
 
 日期和工时保留 2026-10-17 原排期基线；完成状态按实际验证更新。本文回答“什么时候做、往什么方向做、做到什么程度”。日期与工时均为估计，第一周结束后必须根据实际互通、构建和学习成本重新评估。
@@ -123,8 +123,9 @@ W01 的 M09/M10 仅为验证桥接和消息的最小接线，不提前开发完�
 | WP-19 | W10 | 目标平台最终打包验证、许可证、第三方清单、中英文快速开始 | WP-18 | 发布包和说明一致，未验证平台不标为支持 |
 | WP-20 | W10 | 演示视频、架构及故障说明、实测材料、GitHub 发布准备 | WP-19 | 可供他人下载试跑和面试演示，全部 P0 有验收记录 |
 
-- [x] WP-01：工程基础与共享契约完成（2026-10-18）；Debug/Release 构建及各 3 项 CTest 通过，详见[实施与验证记录](../../wp01-implementation.md)。W01、WP-02 仍未完成。
-- [ ] G0：WP-01～WP-02 完成，2026-10-25 复核。
+- [x] WP-01：工程基础与共享契约完成（2026-10-18）；Debug/Release 构建及各 3 项 CTest 通过，详见[实施与验证记录](../../wp01-implementation.md)。WP-01 证据保留在该历史记录中。
+- [x] WP-02：协议、ENet 与 Godot 原生互通完成（2026-10-19）；Debug/Release 各 7 项、Godot 配置 8 项 CTest 通过，详见[实施与验证记录](../../wp02-implementation.md)。
+- [x] G0：WP-01～WP-02 的 macOS 工程互通验收完成（2026-10-19）；跨平台试构建仍待完成，2026-10-25 继续复核首周风险。
 - [ ] G1：WP-03～WP-04 完成，2026-11-01 复核。
 - [ ] G2：WP-05～WP-08 完成，2026-11-15 复核。
 - [ ] G3：WP-09～WP-12 完成，2026-11-29 复核。
@@ -134,12 +135,12 @@ W01 的 M09/M10 仅为验证桥接和消息的最小接线，不提前开发完�
 
 ## 6. 计划代码与验证文件落点
 
-以下为拟创建路径，不表示目前已有代码。完整类和函数签名以两份接口设计为准；本轮不重复粘贴接口，也不生成实现代码。
+以下为工作包文件规划。WP-01/02 已落地，实际接口与验证记录见各自实施文档；其余路径为计划。
 
 | 工作包 | 主要计划文件 | 对应验证文件 |
 | --- | --- | --- |
 | WP-01 | `CMakeLists.txt`、`CMakePresets.json`、`pyproject.toml`、`shared/foundation/result.hpp`、`shared/foundation/clock.hpp`、`shared/contracts/messages.hpp` | `tests/unit/foundation_test.cpp`、`tests/unit/contracts_test.cpp` |
-| WP-02 | `shared/protocol/protocol_codec.cpp`、`adapters/transport/enet_transport.cpp`、`client/godot/native/netarena_bridge.cpp` | `tests/unit/protocol_codec_test.cpp`、`tests/integration/transport_smoke_test.cpp` |
+| WP-02 | `shared/protocol/protocol_codec.cpp`、`adapters/transport/enet_transport.cpp`、`client/godot/native/netarena_bridge.cpp` | `tests/unit/protocol_codec_test.cpp`、`tests/integration/transport_test.cpp`、`client_loopback_test.cpp`、`run_godot_interop.py` |
 | WP-03 | `shared/movement/movement_model.cpp`、`server/game/match_simulation.cpp`、`server/game/room.cpp` | `tests/unit/movement_model_test.cpp`、`tests/unit/match_simulation_test.cpp`、`tests/unit/room_test.cpp` |
 | WP-04 | `server/session/session_service.cpp`、`server/app/server_app.cpp`、`apps/server/server_main.cpp`、`client/core/client_runtime.cpp`、`client/godot/scenes/arena.tscn` | `tests/integration/two_player_match_test.cpp` |
 | WP-05～06 | `server/game/input_buffer.cpp`、`server/app/tick_scheduler.cpp`、`server/app/snapshot_publisher.cpp`、`client/core/prediction_controller.cpp`、`client/core/snapshot_buffer.cpp` | `tests/unit/input_buffer_test.cpp`、`tests/unit/prediction_controller_test.cpp`、`tests/unit/snapshot_buffer_test.cpp` |
@@ -224,9 +225,9 @@ Star 仍是观察指标。首批更有价值的反馈是能否成功运行、是
 
 ## 11. 当前状态与下一步
 
-截至 2026-10-18，已完成需求和设计文档、本排期及 WP-01 工程基础与共享契约。20 个实现工作包中 1 个完成，WP-02～WP-20 尚未开始；W01 和 G0 尚未完成。
+截至 2026-10-19，已完成需求和设计文档、本排期以及 WP-01、WP-02。20 个实现工作包中 2 个完成；WP-03～WP-20 尚未开始。W01 的本机工程互通交付和 G0 验收通过；Linux/Windows 工具链风险尚待试构建消除。
 
-WP-01 已于 2026-10-18 完成。下一步进入 WP-02：锁定传输依赖并验证 C++ 与 Godot 互通。先完成 G0，再沿依赖推进。进入实现时为本周工作包补充可直接执行的细化计划，不一次性展开所有未来模块的代码。
+WP-01 于 2026-10-18、WP-02 于 2026-10-19 完成。下一步进入 WP-03：纯逻辑移动模型、比赛模拟和房间状态机，再由 WP-04 接入网络形成可玩闭环。进入实现时为本周工作包补充可直接执行的细化计划，不一次性展开所有未来模块的代码。
 
 ## 12. 修订记录
 
@@ -234,3 +235,4 @@ WP-01 已于 2026-10-18 完成。下一步进入 WP-02：锁定传输依赖并�
 | --- | --- | --- |
 | v0.1 | 2026-10-17 | 建立 2026-10-19 至 2026-12-27 的 10 周排期、20 个工作包、里程碑与需求对应关系 |
 | v0.2 | 2026-10-18 | 记录 WP-01 完成及 Debug/Release 验证，更新当前状态；保留原排期目标，W01/G0/WP-02 未完成 |
+| v0.3 | 2026-10-19 | 记录 WP-02/G0 本机互通验收、实际依赖及测试，更新进度为 2/20；跨平台验证未完成，原计划日期不变 |

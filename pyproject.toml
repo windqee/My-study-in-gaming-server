@@ -1,5 +1,6 @@
 # Reserved configuration for future Python evidence/scenario tooling.
-# WP-01 has no Python runtime, package, build backend or dependencies.
+# WP-02 bootstrap and acceptance scripts use only the Python standard library.
+# No Python package or build backend is configured.
 [tool.ruff]
 line-length = 100
 

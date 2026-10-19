@@ -1,6 +1,9 @@
 /build/
 /.venv/
-/tools/
+/.tools/
 __pycache__/
 *.py[cod]
 .DS_Store
+/.deps/
+/client/godot/.godot/
+/client/godot/bin/

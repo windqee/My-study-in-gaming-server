@@ -1,30 +1,26 @@
-# My-study-in-gaming-server
+# NetArena
 
-用来求职的游戏服务器项目。项目名 **NetArena**：以权威游戏服务器、客户端同步和可复现测试证据为目标，按[开发路线图](docs/superpowers/plans/2026-10-17-netarena-roadmap.md)逐步实现。
+面向游戏服务器求职的 C++ 联机游戏实验场：以权威服务器、客户端同步和可复现测试证据为主线，后续接入 AI 场景生成。完整目标见[开发路线图](docs/superpowers/plans/2026-10-17-netarena-roadmap.md)。
 
-当前完成 **WP-01：工程基础与共享契约**。可运行程序是基础类型演示，不是网络服务器；尚不能联机或游玩。
+**当前完成 WP-01、WP-02：工程基础、协议编解码、ENet 传输和 Godot 原生互通。** 可以打开客户端面板，连接独立 C++ 服务端、发送心跳并断开；还没有房间、角色移动或完整游戏。实际验证平台为 macOS arm64，其他平台尚未验证。
 
-## 构建与运行
+## 快速开始：C++ 服务端与测试
 
-需要 C++20 编译器、CMake 3.25 或更新版本及 Make。当前实际验证平台为 macOS arm64；其他平台尚未验证。配置和构建只使用 C++ 标准库，不下载任何依赖。
+需要 C++20 编译器、CMake 3.25+、Make、Python 3.12+。首次准备依赖需要联网；后续 CMake 配置和构建不访问网络。
 
 在仓库根目录执行：
 
 ```sh
+python3 tools/bootstrap_dependencies.py
 cmake --preset debug
-cmake --build --preset debug
+cmake --build --preset debug -j 6
 ctest --preset debug
-./build/debug/netarena_foundation_demo
-
-cmake --preset release
-cmake --build --preset release
-ctest --preset release
-./build/release/netarena_foundation_demo
+./build/debug/netarena_interop_server --port 9000 --max-seconds 300
 ```
 
-测试使用始终启用的运行时检查，不依赖 Release 下会禁用的 `assert`。每个配置包含 foundation、contracts 两个单元测试程序和 foundation_demo 冒烟检查；构建时还会独立编译每个公开头文件。
+服务端仅监听本机 IPv4；启动后输出 `READY port=9000`。最后一条命令会占用当前终端，300 秒后退出，也可用 Ctrl+C 结束。未传 `--max-seconds` 时默认运行 60 秒。
 
-如果机器缺少 CMake，可选用 Python 在仓库本地安装工具；此步骤需要联网，后续 CMake 配置不需要：
+如果缺少 CMake，可先安装仓库本地工具：
 
 ```sh
 python3 -m venv .venv
@@ -32,29 +28,67 @@ python3 -m venv .venv
 export PATH="$PWD/.venv/bin:$PATH"
 ```
 
-`pyproject.toml` 仅预留未来 Python 工具配置，目前没有 Python 运行时代码、包或依赖。
+Release 检查：
 
-## 目录
+```sh
+cmake --preset release
+cmake --build --preset release -j 6
+ctest --preset release
+```
 
-| 路径 | 用途 |
+Debug/Release 各有 7 项 CTest，包括 WP-01 回归、20 种协议消息校验、真实 ENet 回环和 C++ 客户端握手。运行时检查在 Release 中仍启用。构建还会独立编译 8 个引擎无关的公开头文件。
+
+## Godot 客户端与真实互通验收（macOS）
+
+已锁定 ENet 1.3.18、nlohmann/json 3.12.0、godot-cpp 固定提交和 Godot 4.5.1。以下命令将引擎放在仓库的 `.deps/` 中，不修改系统安装：
+
+```sh
+python3 tools/bootstrap_dependencies.py --godot-runtime
+export GODOT_BIN="$PWD/.deps/godot-runtime/Godot.app/Contents/MacOS/Godot"
+cmake --preset godot-debug -DGODOT_EXECUTABLE="$GODOT_BIN"
+cmake --build --preset godot-debug -j 6
+ctest --preset godot-debug
+```
+
+该配置有 **8 项 CTest**。第 8 项启动真正的 Godot 和独立 C++ 服务端，检查握手、超过 JavaScript 精确整数范围的 nonce 往返、主动断开，以及错误协议版本被拒绝。没有设置 `GODOT_EXECUTABLE` 时不会注册引擎测试，7 项通过不能替代 Godot 验收。
+
+手动演示：一个终端执行服务端，另一个终端打开客户端，然后点击 **Connect → Ping → Disconnect**：
+
+```sh
+# 终端一（仓库根目录）
+./build/godot-debug/netarena_interop_server --port 9000 --max-seconds 300
+
+# 终端二（仓库根目录）
+export GODOT_BIN="$PWD/.deps/godot-runtime/Godot.app/Contents/MacOS/Godot"
+"$GODOT_BIN" --path client/godot
+```
+
+客户端与验收脚本会显式加载原生扩展，无需先用编辑器扫描；当前项目没有需要导入的外部素材。每次引擎验收都使用不含 `.godot` 缓存的临时副本。本环境 Godot 4.5.1 的立即导入退出存在崩溃，直接运行流程避开该路径，详情见[WP-02 记录](docs/wp02-implementation.md)。
+
+如果已有匹配的引擎，`--godot` 只准备绑定源码，再将 `GODOT_EXECUTABLE` 指向自己的引擎。当前 `.gdextension` 仅配置 macOS 动态库；Linux/Windows 客户端打包仍待实现和验证。
+
+## 依赖与模块
+
+下载地址、版本和 SHA-256 在 [deps.lock.json](deps.lock.json)。`--offline` 只使用已校验的 `.deps/downloads/` 缓存；缺少缓存或哈希不匹配会失败。源码归档解压标记用于避免重复解压，不代表每次构建都会逐文件检查源码修改。依赖缓存、构建产物、Godot 导入缓存不入库。许可见[第三方说明](THIRD_PARTY_NOTICES.md)。
+
+| 路径 | 职责 |
 | --- | --- |
-| `shared/foundation/` | Result、强类型 ID/序号、字节/凭证包装和单调时钟 |
-| `shared/contracts/` | 消息/状态 DTO、基础值校验、ITransport 抽象端口 |
-| `apps/foundation_demo.cpp` | Result、序号、时钟与 Hello 消息的本地演示 |
-| `tests/unit/` | 基础类型及契约检查 |
-| `VERSION.txt` | 唯一手写版本来源，构建读取后生成版本头 |
-| `docs/` | 需求、设计、实施计划与验证记录 |
+| `shared/foundation/`、`shared/contracts/` | 强类型 ID、Result、时钟、20 种消息及 ITransport |
+| `shared/protocol/`、`schemas/` | 有界 JSON 编解码和协议规范 |
+| `adapters/transport/` | ENet 生命周期、通道、队列、超时与连接代际 |
+| `client/core/` | 引擎无关的最小握手与心跳状态机 |
+| `client/godot/` | 原生桥接、组合入口、可见面板和引擎测试脚本 |
+| `apps/interop_server.cpp` | 本机互通验收服务端 |
+| `tests/` | 单元测试、真实回环和 Godot 进程验收 |
+| `tools/`、`cmake/` | 显式依赖准备及离线构建接线 |
 
-## 当前边界
+协议将 uint64 序号/nonce 编码为十进制字符串，严格拒绝未知字段、重复键、超限和方向错误。Control/Input 可靠有序，Snapshot 使用不可靠有序通道。发送成功表示本地入队；连接代际防止旧连接标识复用。当前演示身份不具备登录认证能力。
 
-业务 ID 使用互不混用的字符串类型；Tick、InputSeq、SnapshotSeq、Epoch 为独立 uint64 强类型，通过十进制字符串转换并拒绝溢出递增。ConnectionId 为本地槽位和代际，不能当作 PlayerId。
+下一工作包为 WP-03：无网络的移动模型、比赛模拟和房间状态机。完整会话、游戏画面、预测、恢复、AI、测试回放及性能基准仍按路线图推进。
 
-DTO 在内存中可以尚未通过验证。现有校验只覆盖有限向量、矩形边界、基础端点和输入方向；WP-02 负责完整协议编码、长度上限、消息方向及阶段相关字段校验。Error 消息由边界调用者脱敏并限制长度。凭证包装不提供加密或内存安全擦除保证。
-
-尚未实现 ENet、Godot、实际网络、JSON 编解码、游戏逻辑或密码学。GameEvent、TraceRecord、ITraceSink 的详细契约留给 WP-09；ITokenProvider 在 WP-04 初始会话接入时定义和实现，WP-07 再完善恢复能力。完成 WP-01 不代表 W01、G0 或 WP-02 完成。
-
+- [WP-02 实施与验证记录](docs/wp02-implementation.md)
+- [协议 v1 线格式](schemas/protocol-v1.md)
 - [WP-01 实施与验证记录](docs/wp01-implementation.md)
-- [WP-01 细化计划](docs/superpowers/plans/2026-10-18-wp01-foundation.md)
-- [服务端与客户端接口设计](docs/服务端与客户端接口设计.md)
 - [模块解耦与依赖设计](docs/模块解耦与依赖设计.md)
+- [服务端与客户端接口设计](docs/服务端与客户端接口设计.md)
 - [测试回放与 AI 接口设计](docs/测试回放与AI接口设计.md)
