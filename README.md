@@ -2,7 +2,7 @@
 
 面向游戏服务器求职的 C++ 联机游戏实验场：以权威服务器、客户端同步和可复现测试证据为主线，后续接入 AI 场景生成。完整目标见[开发路线图](docs/superpowers/plans/2026-10-17-netarena-roadmap.md)。
 
-**当前完成 WP-01、WP-02：工程基础、协议编解码、ENet 传输和 Godot 原生互通。** 可以打开客户端面板，连接独立 C++ 服务端、发送心跳并断开；还没有房间、角色移动或完整游戏。实际验证平台为 macOS arm64，其他平台尚未验证。
+**当前完成 WP-01 至 WP-03。** Godot 客户端可以连接独立 C++ 服务端并收发心跳。C++ 游戏领域已支持固定步长移动、障碍碰撞、争抢金币、房间准备和结算，可独立运行测试。WP-04 将房间和比赛规则接到客户端，形成首个联机可玩版本。验证平台为 macOS arm64。
 
 ## 快速开始：C++ 服务端与测试
 
@@ -36,7 +36,7 @@ cmake --build --preset release -j 6
 ctest --preset release
 ```
 
-Debug/Release 各有 7 项 CTest，包括 WP-01 回归、20 种协议消息校验、真实 ENet 回环和 C++ 客户端握手。运行时检查在 Release 中仍启用。构建还会独立编译 8 个引擎无关的公开头文件。
+Debug 和 Release 各有 10 项 CTest，覆盖协议、ENet 回环、C++ 客户端握手及移动、比赛和房间规则。运行时检查在 Release 中仍启用。构建还会独立编译 12 个引擎无关的公开头文件。
 
 ## Godot 客户端与真实互通验收（macOS）
 
@@ -50,7 +50,7 @@ cmake --build --preset godot-debug -j 6
 ctest --preset godot-debug
 ```
 
-该配置有 **8 项 CTest**。第 8 项启动真正的 Godot 和独立 C++ 服务端，检查握手、超过 JavaScript 精确整数范围的 nonce 往返、主动断开，以及错误协议版本被拒绝。没有设置 `GODOT_EXECUTABLE` 时不会注册引擎测试，7 项通过不能替代 Godot 验收。
+该配置有 **11 项 CTest**，其中 `godot_interop` 启动真正的 Godot 和独立 C++ 服务端，检查握手、超过 JavaScript 精确整数范围的 nonce 往返、主动断开，以及错误协议版本被拒绝。设置 `GODOT_EXECUTABLE` 后才会注册引擎测试。
 
 手动演示：一个终端执行服务端，另一个终端打开客户端，然后点击 **Connect → Ping → Disconnect**：
 
@@ -75,6 +75,8 @@ export GODOT_BIN="$PWD/.deps/godot-runtime/Godot.app/Contents/MacOS/Godot"
 | --- | --- |
 | `shared/foundation/`、`shared/contracts/` | 强类型 ID、Result、时钟、20 种消息及 ITransport |
 | `shared/protocol/`、`schemas/` | 有界 JSON 编解码和协议规范 |
+| `shared/movement/` | 客户端和服务器共享的固定步长移动与静态碰撞 |
+| `server/game/` | 权威比赛、金币拾取、得分、结算与房间生命周期 |
 | `adapters/transport/` | ENet 生命周期、通道、队列、超时与连接代际 |
 | `client/core/` | 引擎无关的最小握手与心跳状态机 |
 | `client/godot/` | 原生桥接、组合入口、可见面板和引擎测试脚本 |
@@ -84,8 +86,9 @@ export GODOT_BIN="$PWD/.deps/godot-runtime/Godot.app/Contents/MacOS/Godot"
 
 协议将 uint64 序号/nonce 编码为十进制字符串，严格拒绝未知字段、重复键、超限和方向错误。Control/Input 可靠有序，Snapshot 使用不可靠有序通道。发送成功表示本地入队；连接代际防止旧连接标识复用。当前演示身份不具备登录认证能力。
 
-下一工作包为 WP-03：无网络的移动模型、比赛模拟和房间状态机。完整会话、游戏画面、预测、恢复、AI、测试回放及性能基准仍按路线图推进。
+下一工作包 WP-04 将访客会话、服务器应用和 Godot 游戏画面接入已有规则。
 
+- [WP-03 实施与验证记录](docs/wp03-implementation.md)
 - [WP-02 实施与验证记录](docs/wp02-implementation.md)
 - [协议 v1 线格式](schemas/protocol-v1.md)
 - [WP-01 实施与验证记录](docs/wp01-implementation.md)

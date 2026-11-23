@@ -47,7 +47,9 @@ if(BUILD_TESTING)
         shared/foundation/result.hpp shared/foundation/types.hpp
         shared/foundation/clock.hpp shared/contracts/messages.hpp
         shared/contracts/transport.hpp shared/protocol/protocol_codec.hpp
-        adapters/transport/enet_transport.hpp client/core/interop_client.hpp)
+        adapters/transport/enet_transport.hpp client/core/interop_client.hpp
+        shared/movement/movement_model.hpp server/game/domain_types.hpp
+        server/game/match_simulation.hpp server/game/room.hpp)
     set(header_sources)
     foreach(header IN LISTS public_headers)
         string(REPLACE "/" "_" unit_name "${header}")
@@ -99,6 +101,29 @@ if(BUILD_TESTING)
     netarena_warnings(client_loopback_test)
     add_test(NAME client_loopback COMMAND client_loopback_test)
     set_tests_properties(client_loopback PROPERTIES TIMEOUT 20)
+endif()
+
+# WP-03: pure movement and game rules, with no transport or engine dependency.
+add_library(netarena_movement STATIC shared/movement/movement_model.cpp)
+target_link_libraries(netarena_movement PUBLIC netarena_shared)
+netarena_warnings(netarena_movement)
+set_target_properties(netarena_movement PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
+add_library(netarena_game STATIC server/game/match_simulation.cpp server/game/room.cpp)
+target_link_libraries(netarena_game PUBLIC netarena_movement)
+netarena_warnings(netarena_game)
+
+if(BUILD_TESTING)
+    add_executable(movement_model_test tests/unit/movement_model_test.cpp)
+    target_link_libraries(movement_model_test PRIVATE netarena_movement)
+    netarena_warnings(movement_model_test)
+    add_test(NAME movement_model COMMAND movement_model_test)
+    foreach(test_name IN ITEMS match_simulation room)
+        add_executable(${test_name}_test tests/unit/${test_name}_test.cpp)
+        target_link_libraries(${test_name}_test PRIVATE netarena_game)
+        netarena_warnings(${test_name}_test)
+        add_test(NAME ${test_name} COMMAND ${test_name}_test)
+    endforeach()
 endif()
 
 option(NETARENA_BUILD_GODOT "Build the Godot 4.5 GDExtension" OFF)
